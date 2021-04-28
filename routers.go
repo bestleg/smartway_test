@@ -27,6 +27,43 @@ func RemovePerson(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	w.Header().Set("content-type", "application/json")
 	enc.Encode(person)
 }
+
+func ShowPersonsFromCompany(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	person := models.Person{}
+	idStr := ps.ByName("id")
+	companyID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	db.Find(&person, "people.company_id = ?", companyID)
+	if person.ID == 0 {
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
+	enc := json.NewEncoder(w)
+	w.Header().Set("content-type", "application/json")
+	enc.Encode(person)
+}
+
+func ShowPersonsFromDepartment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	person := models.Person{}
+	depName := ps.ByName("name")
+	departmentName, err := strconv.Atoi(depName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	db.Find(&person, "people.department.name = ?", departmentName)
+	if person.ID == 0 {
+		http.Error(w, "Person not found", http.StatusNotFound)
+		return
+	}
+	enc := json.NewEncoder(w)
+	w.Header().Set("content-type", "application/json")
+	enc.Encode(person)
+}
+
 func GetByID(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	person := models.Person{}
 	idStr := ps.ByName("id")
@@ -35,8 +72,8 @@ func GetByID(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	db.Joins("Company").Find(&person, "person.id = ?", userID)
-	//db.Find(&person, "people.id = ?", userID)
+	//db.Joins("Company").Find(&person, "people.id = ?", userID)
+	db.Find(&person, "people.id = ?", userID)
 	if person.ID == 0 {
 		http.Error(w, "user not found", http.StatusNotFound)
 		return

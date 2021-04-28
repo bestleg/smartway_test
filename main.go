@@ -25,6 +25,8 @@ func main() {
 	router.GET("/", GetAll)
 	router.GET("/get/:id", GetByID)
 	router.GET("/delete/:id", RemovePerson)
+	router.GET("/personfromcompany/:id", ShowPersonsFromCompany)
+	router.GET("/personfromdepartment/:name", ShowPersonsFromCompany)
 	router.POST("/", TestPost)
 
 	http.ListenAndServe(":8000", router)
