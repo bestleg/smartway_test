@@ -29,15 +29,15 @@ func RemovePerson(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 }
 
 func ShowPersonsFromCompany(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	person := models.Person{}
+	person := []models.Person{}
 	idStr := ps.ByName("id")
 	companyID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	db.Find(&person, "people.company_id = ?", companyID)
-	if person.ID == 0 {
+	db.Joins("Department").Joins("Passport").Find(&person, "people.company_id = ?", companyID)
+	if len(person) == 0 {
 		http.Error(w, "user not found", http.StatusNotFound)
 		return
 	}
@@ -47,16 +47,20 @@ func ShowPersonsFromCompany(w http.ResponseWriter, r *http.Request, ps httproute
 }
 
 func ShowPersonsFromDepartment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	person := models.Person{}
+	department := models.Department{}
+	person := []models.Person{}
 	depName := ps.ByName("name")
-	departmentName, err := strconv.Atoi(depName)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+
+	db.Find(&department, "departments.name = ?", depName)
+	db.Joins("Department").Joins("Passport").Find(&person, "department_id = ?", department.ID)
+
+	if department.ID == 0 {
+		http.Error(w, "Department not found", http.StatusNotFound)
 		return
 	}
-	db.Find(&person, "people.department.name = ?", departmentName)
-	if person.ID == 0 {
-		http.Error(w, "Person not found", http.StatusNotFound)
+
+	if len(person) == 0 {
+		http.Error(w, "Department is empty", http.StatusNotFound)
 		return
 	}
 	enc := json.NewEncoder(w)
@@ -72,7 +76,6 @@ func GetByID(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	//db.Joins("Company").Find(&person, "people.id = ?", userID)
 	db.Find(&person, "people.id = ?", userID)
 	if person.ID == 0 {
 		http.Error(w, "user not found", http.StatusNotFound)
