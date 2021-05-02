@@ -2,31 +2,21 @@ package main
 
 import (
 	"net/http"
+	"smartway_test/database"
+	"smartway_test/routers"
 
 	"github.com/julienschmidt/httprouter"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-
-	"smartway_test/models"
 )
 
-var db *gorm.DB
-
 func main() {
-	dsn := "host=localhost user=admin password=123 dbname=smartway port=5432 sslmode=disable"
-	var err error
-	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
-	db.AutoMigrate(&models.Person{}, &models.Department{}, &models.Passport{})
+	database.MigrateDB()
 
 	router := httprouter.New()
-	router.GET("/delete/:id", personRemove)
-	router.GET("/personfromcompany/:id", showPersonsFromCompany)
-	router.GET("/personfromdepartment/:name", showPersonsFromDepartment)
-	router.POST("/", personAdd)
-	router.PUT("/:id", personUpdate)
+	router.GET("/delete/:id", routers.PersonRemove)
+	router.GET("/personfromcompany/:id", routers.ShowPersonsFromCompany)
+	router.GET("/personfromdepartment/:name", routers.ShowPersonsFromDepartment)
+	router.POST("/", routers.PersonAdd)
+	router.PUT("/:id", routers.PersonUpdate)
 
 	http.ListenAndServe(":8000", router)
 }

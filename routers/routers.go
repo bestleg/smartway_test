@@ -1,15 +1,16 @@
-package main
+package routers
 
 import (
 	"encoding/json"
 	"net/http"
+	"smartway_test/database"
 	"smartway_test/models"
 	"strconv"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-func personRemove(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func PersonRemove(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	person := models.Person{}
 	idStr := ps.ByName("id")
 	userID, err := strconv.ParseInt(idStr, 10, 64)
@@ -17,7 +18,8 @@ func personRemove(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	db.Delete(&person, "people.id = ?", userID)
+
+	database.DataBase.Delete(&person, "people.id = ?", userID)
 	if person.ID == 0 {
 		http.Error(w, "Person deleted or not found", http.StatusNotFound)
 		return
@@ -27,7 +29,7 @@ func personRemove(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	enc.Encode(person)
 }
 
-func showPersonsFromCompany(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func ShowPersonsFromCompany(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	person := []models.Person{}
 	idStr := ps.ByName("id")
 	companyID, err := strconv.ParseInt(idStr, 10, 64)
@@ -35,7 +37,7 @@ func showPersonsFromCompany(w http.ResponseWriter, r *http.Request, ps httproute
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	db.Joins("Department").Joins("Passport").Find(&person, "people.company_id = ?", companyID)
+	database.DataBase.Joins("Department").Joins("Passport").Find(&person, "people.company_id = ?", companyID)
 	if len(person) == 0 {
 		http.Error(w, "Person not found", http.StatusNotFound)
 		return
@@ -45,13 +47,13 @@ func showPersonsFromCompany(w http.ResponseWriter, r *http.Request, ps httproute
 	enc.Encode(person)
 }
 
-func showPersonsFromDepartment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func ShowPersonsFromDepartment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	department := models.Department{}
 	person := []models.Person{}
 	depName := ps.ByName("name")
 
-	db.Find(&department, "departments.name = ?", depName)
-	db.Joins("Department").Joins("Passport").Find(&person, "department_id = ?", department.ID)
+	database.DataBase.Find(&department, "departments.name = ?", depName)
+	database.DataBase.Joins("Department").Joins("Passport").Find(&person, "department_id = ?", department.ID)
 
 	if department.ID == 0 {
 		http.Error(w, "Department not found", http.StatusNotFound)
@@ -67,7 +69,7 @@ func showPersonsFromDepartment(w http.ResponseWriter, r *http.Request, ps httpro
 	enc.Encode(person)
 }
 
-func personAdd(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func PersonAdd(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	person := models.Person{}
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(&person)
@@ -75,11 +77,11 @@ func personAdd(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		retError(err, w)
 		return
 	}
-	db.Create(&person)
+	database.DataBase.Create(&person)
 	w.Write([]byte(strconv.Itoa(int(person.ID))))
 }
 
-func personUpdate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func PersonUpdate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	params := models.Person{}
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(&params)
@@ -91,8 +93,8 @@ func personUpdate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	var id int
 	idStr := ps.ByName("id")
 	id, _ = strconv.Atoi(idStr)
-	db.Find(&curper, "id = ?", id)
-	err = db.Model(&curper).Updates(params).Error
+	database.DataBase.Find(&curper, "id = ?", id)
+	err = database.DataBase.Model(&curper).Updates(params).Error
 	if err != nil {
 		retError(err, w)
 	}
