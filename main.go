@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"smartway_test/database"
 	"smartway_test/routers"
-
 	"github.com/julienschmidt/httprouter"
 )
 
