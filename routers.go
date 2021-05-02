@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"smartway_test/models"
 	"strconv"
@@ -10,7 +9,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func RemovePerson(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func personRemove(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	person := models.Person{}
 	idStr := ps.ByName("id")
 	userID, err := strconv.ParseInt(idStr, 10, 64)
@@ -20,7 +19,7 @@ func RemovePerson(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	}
 	db.Delete(&person, "people.id = ?", userID)
 	if person.ID == 0 {
-		http.Error(w, "Person not found or deleted", http.StatusNotFound)
+		http.Error(w, "Person deleted or not found", http.StatusNotFound)
 		return
 	}
 	enc := json.NewEncoder(w)
@@ -28,7 +27,7 @@ func RemovePerson(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	enc.Encode(person)
 }
 
-func ShowPersonsFromCompany(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func showPersonsFromCompany(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	person := []models.Person{}
 	idStr := ps.ByName("id")
 	companyID, err := strconv.ParseInt(idStr, 10, 64)
@@ -38,7 +37,7 @@ func ShowPersonsFromCompany(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 	db.Joins("Department").Joins("Passport").Find(&person, "people.company_id = ?", companyID)
 	if len(person) == 0 {
-		http.Error(w, "user not found", http.StatusNotFound)
+		http.Error(w, "Person not found", http.StatusNotFound)
 		return
 	}
 	enc := json.NewEncoder(w)
@@ -46,7 +45,7 @@ func ShowPersonsFromCompany(w http.ResponseWriter, r *http.Request, ps httproute
 	enc.Encode(person)
 }
 
-func ShowPersonsFromDepartment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func showPersonsFromDepartment(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	department := models.Department{}
 	person := []models.Person{}
 	depName := ps.ByName("name")
@@ -68,38 +67,37 @@ func ShowPersonsFromDepartment(w http.ResponseWriter, r *http.Request, ps httpro
 	enc.Encode(person)
 }
 
-func GetByID(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	person := models.Person{}
-	idStr := ps.ByName("id")
-	userID, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	db.Find(&person, "people.id = ?", userID)
-	if person.ID == 0 {
-		http.Error(w, "user not found", http.StatusNotFound)
-		return
-	}
-	enc := json.NewEncoder(w)
-	w.Header().Set("content-type", "application/json")
-	enc.Encode(person)
-}
-
-func GetAll(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	persons := []models.Person{}
-	db.Joins("Company").Find(&persons)
-	enc := json.NewEncoder(w)
-	w.Header().Set("content-type", "application/json")
-	enc.Encode(persons)
-}
-
-func TestPost(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func personAdd(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	person := models.Person{}
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(&person)
 	if err != nil {
-		panic(err)
+		retError(err, w)
+		return
 	}
-	fmt.Printf("%+v", person)
+	db.Create(&person)
+	w.Write([]byte(strconv.Itoa(int(person.ID))))
+}
+
+func personUpdate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	params := models.Person{}
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(&params)
+	if err != nil {
+		retError(err, w)
+		return
+	}
+	var curper models.Person
+	var id int
+	idStr := ps.ByName("id")
+	id, _ = strconv.Atoi(idStr)
+	db.Find(&curper, "id = ?", id)
+	db.Model(&curper).Updates(params)
+	db.Find(&curper, "id = ?", id)
+	enc := json.NewEncoder(w)
+	enc.Encode(&curper)
+}
+
+func retError(err error, w http.ResponseWriter) {
+	http.Error(w, err.Error(), http.StatusInternalServerError)
 }

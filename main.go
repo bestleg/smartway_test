@@ -22,12 +22,11 @@ func main() {
 	db.AutoMigrate(&models.Person{}, &models.Department{}, &models.Passport{})
 
 	router := httprouter.New()
-	router.GET("/", GetAll)
-	router.GET("/get/:id", GetByID)
-	router.GET("/delete/:id", RemovePerson)
-	router.GET("/personfromcompany/:id", ShowPersonsFromCompany)
-	router.GET("/personfromdepartment/:name", ShowPersonsFromDepartment)
-	router.POST("/", TestPost)
+	router.GET("/delete/:id", personRemove)
+	router.GET("/personfromcompany/:id", showPersonsFromCompany)
+	router.GET("/personfromdepartment/:name", showPersonsFromDepartment)
+	router.POST("/", personAdd)
+	router.PUT("/:id", personUpdate)
 
 	http.ListenAndServe(":8000", router)
 }
