@@ -92,10 +92,10 @@ func personUpdate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	idStr := ps.ByName("id")
 	id, _ = strconv.Atoi(idStr)
 	db.Find(&curper, "id = ?", id)
-	db.Model(&curper).Updates(params)
-	db.Find(&curper, "id = ?", id)
-	enc := json.NewEncoder(w)
-	enc.Encode(&curper)
+	err = db.Model(&curper).Updates(params).Error
+	if err != nil {
+		retError(err, w)
+	}
 }
 
 func retError(err error, w http.ResponseWriter) {
