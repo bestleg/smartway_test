@@ -15,7 +15,7 @@ func PersonRemove(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	idStr := ps.ByName("id")
 	userID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RetError(err, w)
 		return
 	}
 
@@ -34,7 +34,7 @@ func PersonAdd(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(&person)
 	if err != nil {
-		retError(err, w)
+		RetError(err, w)
 		return
 	}
 	database.DataBase.Create(&person)
@@ -46,20 +46,22 @@ func PersonUpdate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(&params)
 	if err != nil {
-		retError(err, w)
+		RetError(err, w)
 		return
 	}
-	var curper models.Person
-	var id int
+	var person models.Person
 	idStr := ps.ByName("id")
-	id, _ = strconv.Atoi(idStr)
-	database.DataBase.Find(&curper, "id = ?", id)
-	err = database.DataBase.Model(&curper).Updates(params).Error
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		retError(err, w)
+		RetError(err, w)
+	}
+	database.DataBase.Find(&person, "id = ?", id)
+	err = database.DataBase.Model(&person).Updates(params).Error
+	if err != nil {
+		RetError(err, w)
 	}
 }
 
-func retError(err error, w http.ResponseWriter) {
+func RetError(err error, w http.ResponseWriter) {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
